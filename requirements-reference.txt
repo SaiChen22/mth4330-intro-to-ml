@@ -1,0 +1,3 @@
+# Only for correctness checks against PyTorch autograd (src/reference/, tests/).
+# Never imported by src/mlp/.
+torch

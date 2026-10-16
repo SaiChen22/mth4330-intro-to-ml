@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data (downloaded, not committed)
+data/*
+!data/.gitkeep
+
+# LaTeX build files
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/*.synctex.gz
+report/*.fdb_latexmk
+report/*.fls
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

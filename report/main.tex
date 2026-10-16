@@ -1,0 +1,82 @@
+%%%%%%%% MTH 4330 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+%%%%%%%% Adapted from the ICML 2021 EXAMPLE LATEX SUBMISSION FILE %%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackage line and replace
+% \usepackage{icml2021} with \usepackage[nohyperref]{icml2021} above.
+\usepackage{hyperref}
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Use the following line for the initial blind version submitted for review:
+%\usepackage{icml2021}
+
+% If accepted, instead use the following line for the camera-ready submission:
+\usepackage[accepted]{icml2021}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Multilayer Perceptrons: Mathematical Foundations,\\
+a From-Scratch Implementation, and a Three-Dataset Study}
+
+\begin{icmlauthorlist}
+\icmlauthor{Leo Chen}{}
+\icmlauthor{Sai Kaung San}{}
+\icmlauthor{Priyanshu Rana}{}
+\end{icmlauthorlist}
+
+\vskip 0.3in
+]
+
+% Preliminary report: <= 4 pages, excluding references.
+% Section list and required content follow the course guidelines ("Preliminary report").
+% An abstract is only needed for the final report.
+
+\section{Introduction}
+% - Define the problem class and introduce the selected algorithm.
+% - Explain why the topic is suitable for a mathematical and computational study.
+% - Note any changes from the approved plan.
+% - Put the public GitHub repository link at the end of this section (\url{...}).
+
+\section{Mathematical Foundations}
+% - Introduce the notation, objective, assumptions, and central ideas behind the algorithm.
+% - Outline the derivation of its main steps.
+% - State relevant theoretical properties or limitations.
+
+\section{Implementation Plan and Status}
+% - Describe the design of the implementation in Python.
+% - Include pseudocode; identify the core components the team will write.
+% - Explain how correctness will be checked.
+% - State which general-purpose libraries or numerical routines are used.
+% - Describe unit tests, synthetic examples, or comparisons with a trusted implementation.
+% - Provide the link to the public GitHub repository.
+
+\section{Datasets, Baselines, and Evaluation}
+% - For each dataset: source, size, variables, learning task.
+% - Preprocessing; data splits or cross-validation; evaluation metrics.
+% - Baseline methods; planned tuning procedure.
+
+\section{Progress and Remaining Work}
+% - Completed work, pilot results, current difficulties.
+% - Schedule and division of responsibilities for the remaining derivations, implementation,
+%   experiments, writing, and presentation preparation.
+% - Full experimental results are not required at this stage.
+
+% The approved proposal's references are listed with \nocite until the text cites them.
+\nocite{rumelhart1986learning,glorot2010understanding,telgarsky2016benefits}
+
+\bibliography{main}
+\bibliographystyle{icml2021}
+
+\end{document}
