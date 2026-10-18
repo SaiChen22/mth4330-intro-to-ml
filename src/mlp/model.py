@@ -1,14 +1,12 @@
 """The MLP model: training and prediction.
 
 Scope (approval):
-- [ ] mini-batch gradient training
-- [ ] L2 weight decay, dropout, early stopping
-- [ ] classification (softmax output) and regression (linear output)
-- [ ] prediction
+- [x] mini-batch gradient training
+- [x] L2 weight decay, dropout, early stopping
+- [x] classification (softmax output) and regression (linear output)
+- [x] prediction
 
-Interface (docs/open-questions.md #10). Done so far: constructor, network construction, forward
-and backward pass, loss with gradients, ``n_parameters``. Still to do: ``fit`` (needs optim.py),
-``predict``, ``predict_proba``, early stopping, ``history_``.
+Interface: docs/open-questions.md #10 (``record_norms`` is deferred).
 
 Structure: Dense -> activation -> Dropout for each hidden layer, then a final Dense. The output is
 k logits for classification (softmax inside the loss) and one linear output for regression.
@@ -16,7 +14,7 @@ k logits for classification (softmax inside the loss) and one linear output for 
 
 import numpy as np
 
-from . import activations, init, losses
+from . import activations, init, losses, optim
 from .layers import Dense, Dropout
 
 _TASKS = ("classification", "regression")
@@ -102,6 +100,68 @@ class MLP:
             for dense in self.layers_:
                 dense.dW += losses.l2_grad(dense.W, self.weight_decay)
         return data_loss + losses.l2_penalty([d.W for d in self.layers_], self.weight_decay)
+
+    def _data_loss(self, X, y):
+        """Mean data loss (no L2 term) in prediction mode (no dropout)."""
+        loss_fn = losses.softmax_cross_entropy if self.task == "classification" else losses.squared_error
+        return loss_fn(self._forward(X, training=False), y)[0]
+
+    def _params(self):
+        return [p for d in self.layers_ for p in (d.W, d.b)]
+
+    def fit(self, X, y, X_val=None, y_val=None):
+        """Train with mini-batches; early stopping on the validation data loss if it is given."""
+        X = np.asarray(X, dtype=self.dtype)
+        if self.task == "classification":
+            y = np.asarray(y, dtype=int)
+            n_out = int(y.max()) + 1
+        else:
+            y = np.asarray(y, dtype=self.dtype)
+            n_out = 1
+        validate = X_val is not None
+        if validate:
+            X_val = np.asarray(X_val, dtype=self.dtype)
+            y_val = np.asarray(y_val, dtype=int if self.task == "classification" else self.dtype)
+
+        self._build(X.shape[1], n_out)
+        opt = optim.get(self.optimizer, self.lr, self.momentum)
+        n = X.shape[0]
+        self.history_ = {"train": [], "val": []}
+        best_loss, best_params, wait = np.inf, None, 0
+
+        for _ in range(self.epochs):
+            order = self.rng_.permutation(n)
+            for start in range(0, n, self.batch_size):
+                idx = order[start : start + self.batch_size]
+                self._loss_and_grads(X[idx], y[idx], training=True)
+                grads = [g for d in self.layers_ for g in (d.dW, d.db)]
+                opt.step(self._params(), grads)
+            self.history_["train"].append(self._data_loss(X, y))
+            if not validate:
+                continue
+            val_loss = self._data_loss(X_val, y_val)
+            self.history_["val"].append(val_loss)
+            if val_loss < best_loss:
+                best_loss, best_params, wait = val_loss, [p.copy() for p in self._params()], 0
+            else:
+                wait += 1
+                if wait >= self.patience:
+                    break
+        if best_params is not None:
+            for p, best in zip(self._params(), best_params):
+                p[...] = best
+        return self
+
+    def predict(self, X):
+        """Class labels (classification) or predicted values (regression)."""
+        out = self._forward(np.asarray(X, dtype=self.dtype), training=False)
+        return out.argmax(axis=1) if self.task == "classification" else out
+
+    def predict_proba(self, X):
+        """Class probabilities, shape (n, k); classification only."""
+        if self.task != "classification":
+            raise ValueError("predict_proba is only available for task='classification'")
+        return losses.softmax(self._forward(np.asarray(X, dtype=self.dtype), training=False))
 
     def n_parameters(self):
         return sum(d.W.size + d.b.size for d in self.layers_)
