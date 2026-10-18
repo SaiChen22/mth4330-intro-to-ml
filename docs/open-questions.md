@@ -109,3 +109,8 @@ stopping is off when no validation data is passed.
 - All feature preprocessing, fit on the training split only, happens inside the loader, so every
   method sees identical data.
 - Targets are returned as they are (class indices for classification, raw values for regression).
+
+### Layer design (decided 2026-10-18)
+
+- `src/mlp/layers.py` holds two classes, `Dense` and `Dropout`, each with `forward` and `backward`.
+- `MLP` in `src/mlp/model.py` chains them.
