@@ -34,7 +34,13 @@ datasets against baseline methods.
 | Adult Census Income | UCI | 48,842 records, 14 mixed numeric/categorical features | binary classification of income > $50K (≈ 24 % positive) |
 | California Housing | StatLib / scikit-learn | 20,640 block groups, 8 numeric features | regression of median house value |
 
-Data is not committed to this repository. Download instructions: **TODO**.
+Data is not committed to this repository. Download the raw files into `data/` with
+
+```bash
+python scripts/download_data.py
+```
+
+The loaders in `src/bench/data/` read them from `data/` and do all preprocessing (fit on the training split only).
 
 ## Baselines
 
@@ -110,13 +116,20 @@ XOR; overfitting a tiny training sample.
 ## Setup
 
 ```bash
-pip install -r requirements.txt
+pip install -e .                            # installs requirements.txt; makes mlp, bench, baselines, reference importable
 pip install -r requirements-reference.txt   # only for the PyTorch correctness check
 ```
 
+Tests: `pytest`.
+
 ## Reproducing results
 
-**TODO** — commands that reproduce every reported number.
+```bash
+python scripts/download_data.py
+python scripts/reproduce_results.py
+```
+
+Currently the script runs only the California Housing pilot (ridge vs. our MLP).
 
 ## Milestones
 
