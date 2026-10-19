@@ -126,7 +126,8 @@ Tests: `pytest`.
 
 ```bash
 python scripts/download_data.py
-python scripts/reproduce_results.py
+python scripts/reproduce_results.py      # writes results/<dataset>_<method>.json
+python scripts/summarize_results.py      # prints the tables from results/*.json
 ```
 
 Currently the script runs only the California Housing pilot (ridge vs. our MLP).
