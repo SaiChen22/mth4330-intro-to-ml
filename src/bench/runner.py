@@ -20,11 +20,12 @@ def n_parameters(model):
     return model.coef_.size + model.intercept_.size  # scikit-learn linear models
 
 
-def run(make_model, data, metrics_fn, seeds=range(5), use_validation=False):
+def run(make_model, data, metrics_fn, seeds=range(5), use_validation=False, use_proba=False):
     """Fit ``make_model(seed)`` for every seed; return the summary ``{name: (mean, sd)}``.
 
     ``data`` is what a loader returns: ``X_train, y_train, X_val, y_val, X_test, y_test``.
-    The test metrics, ``train_time`` (seconds) and ``n_parameters`` are recorded per seed.
+    ``metrics_fn(y_true, y_pred)`` is called on the test set, or ``metrics_fn(y_true, y_pred, proba)``
+    with ``use_proba=True`` (Adult). ``train_time`` (seconds) and ``n_parameters`` are recorded per seed.
     """
     X_train, y_train, X_val, y_val, X_test, y_test = data
     runs = []
@@ -36,5 +37,7 @@ def run(make_model, data, metrics_fn, seeds=range(5), use_validation=False):
         else:
             model.fit(X_train, y_train)
         elapsed = time.perf_counter() - start
-        runs.append({**metrics_fn(y_test, model.predict(X_test)), "train_time": elapsed, "n_parameters": n_parameters(model)})
+        extra = (model.predict_proba(X_test),) if use_proba else ()
+        scores = metrics_fn(y_test, model.predict(X_test), *extra)
+        runs.append({**scores, "train_time": elapsed, "n_parameters": n_parameters(model)})
     return summarise(runs)
