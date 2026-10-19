@@ -50,6 +50,12 @@ be reported in the Introduction of the preliminary report.
   (mean about 2.07, s.d. about 1.15), so RMSE and MAE are reported in $100k units and nothing needs to
   be inverted.
 
+### 3 and 7. Fashion-MNIST (source and dtype, decided 2026-10-18)
+
+- Source: the official IDX files from Zalando's repository (this fixes the official 60k / 10k split).
+- Pixels are divided by 255 and stored as float32 (784 features per image). The MLP casts them to
+  its own `dtype`.
+
 ### 10. MLP interface
 
 Scikit-learn style, so the runner can treat the MLP and the baselines the same way. The one
