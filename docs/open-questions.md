@@ -15,17 +15,17 @@ be reported in the Introduction of the preliminary report.
 | 5 | California Housing: how to stratify a continuous target for the 70/15/15 split? Scale the target? | Stratify on 10 quantile bins of the target. Target is not scaled for any method (units of $100k). See [California Housing](#5-california-housing) below. | 2026-10-18 |
 | 6 | Random seed(s) that fix the splits; which 5 seeds are used for training randomness | Split seed 4330, shared by all methods. Training randomness uses seeds 0–4 for every method, including `random_state` of RF / HGB. | 2026-10-18 |
 | 7 | Fashion-MNIST pixel preprocessing (e.g. divide by 255, standardise) | Divide by 255 and flatten to 784 features. No other preprocessing. | 2026-10-18 |
-| 8 | RBF-SVM: size of the training subsample on Fashion-MNIST (and Adult?) | | |
-| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | | |
+| 8 | RBF-SVM: size of the training subsample on Fashion-MNIST (and Adult?) | Fashion-MNIST: stratified 10,000 of the 54k training set (sampling seed 4330). Adult, Housing: full training set first; see [SVM subsample](#8-svm-subsample) below. | 2026-10-18 |
+| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | Selection metric on validation: accuracy (F-MNIST), ROC-AUC (Adult), RMSE (Housing). 3–6 configs per method and dataset, tuned with seed 0, then the best config rerun with seeds 0–4. Grid values: pending (written by the baselines owner, reviewed by Sai). See [Tuning](#9-tuning) below. | 2026-10-18 |
 | **Code** | | | |
 | 10 | Public interface of the MLP (class/function names, arguments, return values) | scikit-learn style `MLP` class; full specification in [MLP interface](#10-mlp-interface) below. | 2026-10-18 |
 | 11 | Interface of the dataset loaders (what they return) | `load_xxx(split_seed=4330)` returns six NumPy arrays; see [Dataset loaders](#11-dataset-loaders) below. | 2026-10-18 |
-| 12 | Result file format and where results are stored | | |
+| 12 | Result file format and where results are stored | One JSON per dataset × method in `results/` (e.g. `results/adult_rf.json`), plus a small summary script that reads them all; see [Results files](#12-results-files-and-parameter-counts) below. | 2026-10-18 |
 | 13 | Python version; pinned dependency versions? | Python >= 3.11 (tested on 3.11 and on Colab's current Python). Versions pinned in `requirements.txt`. | 2026-10-18 |
 | 14 | Test framework (e.g. pytest)? Continuous integration on GitHub? | pytest. No CI for now. | 2026-10-18 |
 | 15 | Packaging / import path for `src/` (e.g. `pip install -e .` vs. `PYTHONPATH`) | Add a `pyproject.toml`; `pip install -e .` makes `mlp`, `bench`, `baselines` and `reference` importable. | 2026-10-18 |
 | **Repository and writing** | | | |
-| 16 | Default branch name; branch / pull-request / review rules | | |
+| 16 | Default branch name; branch / pull-request / review rules | Default branch stays `master`; one branch per person from the latest `master`; Sai merges, no PR review for now; no direct commits to `master`, no force push. See [Branches](#16-branches) below. | 2026-10-18 |
 | 17 | License for the code | | |
 | 18 | Report: one `main.tex` or one file per section? Overleaf or the repo as the source of truth? | | |
 | 19 | Shared notation for the report (symbols, vector/matrix conventions) | | |
@@ -120,3 +120,50 @@ stopping is off when no validation data is passed.
 
 - `src/mlp/layers.py` holds two classes, `Dense` and `Dropout`, each with `forward` and `backward`.
 - `MLP` in `src/mlp/model.py` chains them.
+
+### 8. SVM subsample
+
+- Fashion-MNIST: a stratified 10,000 of the 54k training images, sampling seed 4330, the same subset
+  for every training seed.
+- Adult and Housing: the full training set first. If one Adult fit takes more than about 5 minutes,
+  use the same kind of stratified 10k subset and state in the report that this goes beyond the
+  approval.
+- The report must say that the SVM used a subsample.
+
+### 9. Tuning
+
+- Selection metric, on the validation set only: accuracy (Fashion-MNIST), ROC-AUC (Adult),
+  RMSE (Housing).
+- Budget: 3–6 configurations per method and dataset, roughly the same number for every method,
+  tuning 1–2 main hyperparameters per method.
+- Procedure: (1) train every configuration with seed 0 and score it on the validation set;
+  (2) pick the best one; (3) rerun that configuration with seeds 0–4 and report the test-set
+  mean ± s.d.
+- Grid shapes: ridge `alpha` and logistic `C`, 3 values each; random forest `max_depth`, 3 values;
+  HGB `learning_rate`, 3 values; SVM `C`, 2 values; MLP width and learning rate, 2 values each
+  (4 configurations).
+- The baselines owner lists the concrete values; Sai reviews them before they are written into this
+  file. Pending.
+- SVM probabilities: not enabled during tuning; the final fit uses `probability=True` and
+  `random_state=seed`. The report must say that for a probability-enabled SVC the s.d. is not
+  strictly 0 and that `predict` and the argmax of the probabilities occasionally disagree.
+
+### 12. Results files and parameter counts
+
+- One JSON per dataset × method in `results/`, e.g. `results/adult_rf.json`. Content: the selected
+  hyperparameters, per-seed metrics, and mean ± s.d.; for Fashion-MNIST the confusion matrix as
+  nested lists.
+- A small summary script reads all the JSON files and prints the tables. Separate files mean parallel
+  experiments never write to the same file.
+- Parameter count: linear models and the MLP, the actual number of weights and biases; random
+  forest, the total number of tree nodes; SVM, the number of support vectors; HGB, `n/a`. A table
+  footnote must say that for trees and kernel methods the count only proxies model size and cannot
+  be compared directly with neural networks. (`bench/runner.py` does not implement this yet.)
+
+### 16. Branches
+
+- Default branch stays `master`.
+- Everyone works on their own branch from the latest `master`, e.g. `feat/mlp-core`,
+  `feat/baselines`.
+- Sai merges; no PR review for now.
+- No direct commits to `master`, no force push.
