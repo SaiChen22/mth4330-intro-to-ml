@@ -17,10 +17,9 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from . import fetch
+from . import data_path
 from ..splits import stratified_70_15_15
 
-_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/"
 _NUMERIC = ["age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"]
 _CATEGORICAL = [
     "workclass", "education", "marital-status", "occupation",
@@ -34,7 +33,7 @@ _COLUMNS = (
 
 
 def _read(filename, **kwargs):
-    return pd.read_csv(fetch(_URL + filename, filename), names=_COLUMNS, skipinitialspace=True, **kwargs)
+    return pd.read_csv(data_path(filename), names=_COLUMNS, skipinitialspace=True, **kwargs)
 
 
 def load_adult(split_seed=4330):

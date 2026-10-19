@@ -13,14 +13,12 @@ import gzip
 
 import numpy as np
 
-from . import fetch
+from . import data_path
 from ..splits import stratified_holdout
-
-_URL = "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/"
 
 
 def _read(filename, offset):
-    with gzip.open(fetch(_URL + filename, filename)) as f:
+    with gzip.open(data_path(filename)) as f:
         return np.frombuffer(f.read(), dtype=np.uint8, offset=offset)
 
 
