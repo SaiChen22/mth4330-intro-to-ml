@@ -21,7 +21,7 @@ be reported in the Introduction of the preliminary report.
 | 10 | Public interface of the MLP (class/function names, arguments, return values) | scikit-learn style `MLP` class; full specification in [MLP interface](#10-mlp-interface) below. | 2026-10-18 |
 | 11 | Interface of the dataset loaders (what they return) | `load_xxx(split_seed=4330)` returns six NumPy arrays; see [Dataset loaders](#11-dataset-loaders) below. | 2026-10-18 |
 | 12 | Result file format and where results are stored | One JSON per dataset × method in `results/` (e.g. `results/adult_rf.json`), plus a small summary script that reads them all; see [Results files](#12-results-files-and-parameter-counts) below. | 2026-10-18 |
-| 13 | Python version; pinned dependency versions? | Python >= 3.11 (tested on 3.11 and on Colab's current Python). Versions pinned in `requirements.txt`. | 2026-10-18 |
+| 13 | Python version; pinned dependency versions? | Python >= 3.11 (tested on 3.11 and on Colab's current Python). Versions pinned in `requirements.txt`. Checked 2026-10-18: the pins install and all tests pass on Python 3.11.16 (numpy is pinned to 2.4.6 because 2.5 needs Python >= 3.12); Colab not tested yet. | 2026-10-18 |
 | 14 | Test framework (e.g. pytest)? Continuous integration on GitHub? | pytest. No CI for now. | 2026-10-18 |
 | 15 | Packaging / import path for `src/` (e.g. `pip install -e .` vs. `PYTHONPATH`) | Add a `pyproject.toml`; `pip install -e .` makes `mlp`, `bench`, `baselines` and `reference` importable. | 2026-10-18 |
 | **Repository and writing** | | | |
@@ -158,7 +158,7 @@ stopping is off when no validation data is passed.
 - Parameter count: linear models and the MLP, the actual number of weights and biases; random
   forest, the total number of tree nodes; SVM, the number of support vectors; HGB, `n/a`. A table
   footnote must say that for trees and kernel methods the count only proxies model size and cannot
-  be compared directly with neural networks. (`bench/runner.py` does not implement this yet.)
+  be compared directly with neural networks.
 
 ### 16. Branches
 
@@ -167,3 +167,24 @@ stopping is off when no validation data is passed.
   `feat/baselines`.
 - Sai merges; no PR review for now.
 - No direct commits to `master`, no force push.
+
+### Implementation choices (not fixed by the approval, recorded 2026-10-18)
+
+- **Initialisation:** Xavier is the uniform version, W_ij ~ U(-a, a) with a = sqrt(6 / (fan_in + fan_out));
+  He is the normal version, W_ij ~ N(0, 2 / fan_in). Biases start at zero.
+- **Weight layout:** W has shape (fan_out, fan_in), as in the report's z = W h + b. Data is stored one
+  example per row, so a layer computes Z = H W^T + b.
+- **Optimisers:** momentum uses v <- mu v + g, p <- p - lr v. Adam uses the standard bias-corrected
+  update with beta = (0.9, 0.999) and eps = 1e-8.
+- **MLP constructor:** all arguments are keyword-only. `weight_decay`, `dropout` and `momentum`
+  default to 0 and `dtype` to float64; every other argument is required.
+- **`history_`:** a dict `{"train": [...], "val": [...]}` with one entry per epoch. The training loss
+  is computed at the end of each epoch on the full training set in prediction mode (no dropout);
+  `"val"` stays empty when no validation data is passed.
+- **Predictions:** for classification `predict` returns the argmax of the output; for Adult
+  (2-output softmax) this is the 0.5 threshold on the positive-class probability.
+- **Numerics:** softmax, cross-entropy and sigmoid are computed in an overflow-safe way (shift by the
+  row maximum; exponent of a non-positive number only).
+- **Seeds summary:** the s.d. over the 5 seeds is the sample s.d. (ddof = 1).
+- **Data download:** `scripts/download_data.py` downloads the raw files into `data/`; the loaders
+  only read them and raise an error that points to the script if a file is missing.
