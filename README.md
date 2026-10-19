@@ -2,8 +2,10 @@
 
 MTH 4330 (Fall 2026) final project — **Leo Chen, Sai Kaung San, Priyanshu Rana**
 
-> **Status: skeleton.** Directory layout and scope only — no implementation yet.
-> Items not yet decided by the team are listed in [`docs/open-questions.md`](docs/open-questions.md).
+> **Status: in progress.** Done: the NumPy MLP (layers, losses, optimisers, initialisation, training),
+> the three dataset loaders, metrics, runner, results files, the ridge baseline and the unit tests.
+> Not done yet: the other baselines, tuning, the PyTorch agreement check, and the full experiments.
+> Team decisions, and the items still open, are in [`docs/open-questions.md`](docs/open-questions.md).
 
 ## Project
 
@@ -73,7 +75,7 @@ XOR; overfitting a tiny training sample.
 
 ## Implementation rules
 
-- Python 3. The MLP (layers, forward pass, backpropagation, losses, optimisers, initialisation,
+- Python >= 3.11. The MLP (layers, forward pass, backpropagation, losses, optimisers, initialisation,
   regularisation) is written by the team in **NumPy**, with **no automatic differentiation**.
 - pandas and scikit-learn are used for data handling, preprocessing and baselines; matplotlib for figures.
 - Library implementations (baselines, references) are kept separate from our own code.
@@ -83,11 +85,12 @@ XOR; overfitting a tiny training sample.
 ```
 .
 ├── README.md
-├── requirements.txt              core dependencies
+├── pyproject.toml                package metadata; `pip install -e .` makes src/ importable
+├── requirements.txt              core dependencies (pinned)
 ├── requirements-reference.txt    PyTorch, for correctness checks only
 ├── .gitignore
 ├── docs/
-│   └── open-questions.md         decisions still to be made by the team
+│   └── open-questions.md         team decisions (with dates) and items still open
 ├── src/
 │   ├── mlp/                      our MLP (NumPy only)
 │   │   ├── activations.py        ReLU, tanh, sigmoid
@@ -97,19 +100,19 @@ XOR; overfitting a tiny training sample.
 │   │   ├── optim.py              SGD, momentum, Adam
 │   │   └── model.py              training (mini-batches, early stopping) and prediction
 │   ├── bench/                    shared by every method
-│   │   ├── data/                 fmnist.py, adult.py, housing.py
+│   │   ├── data/                 fmnist.py, adult.py, housing.py (read data/, preprocess)
 │   │   ├── splits.py             fixed train/validation/test splits
 │   │   ├── metrics.py            per-dataset metrics
 │   │   ├── runner.py             run a method over seeds
-│   │   ├── results.py            store and summarise results
+│   │   ├── results.py            save/load results as results/<dataset>_<method>.json
 │   │   └── plotting.py           figures
-│   ├── baselines/                scikit-learn baselines
+│   ├── baselines/                scikit-learn baselines (linear.py: ridge so far)
 │   └── reference/                PyTorch / scikit-learn MLP, correctness checks only
 ├── tests/                        gradient check, PyTorch agreement, XOR, tiny-sample overfit
-├── scripts/                      download_data.py, reproduce_results.py
+├── scripts/                      download_data.py, reproduce_results.py, summarize_results.py
 ├── experiments/README.md         planned experiments
 ├── data/                         downloaded datasets (not committed)
-├── results/                      experiment outputs
+├── results/                      experiment outputs (one JSON per dataset and method)
 └── report/                       LaTeX report (course ICML template)
 ```
 
