@@ -10,6 +10,10 @@ def ridge(alpha):
 
 
 def logistic(C, random_state=0):
+      """
+      C: parameter
+      random_state: seeds 0–4
+      """
     return LogisticRegression(
         C=C,
         max_iter=1000,
