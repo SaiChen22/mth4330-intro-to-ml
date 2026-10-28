@@ -1,19 +1,18 @@
-"""
-I am not sure if you just want logistic regression alone or with ridge in linear 
-- [ ] softmax / logistic regression (classification) and ridge regression (regression)
-      = the no-hidden-layer MLP
-"""
-from sklearn.linear_model import Ridge, LogisticRegression
+"""Softmax / logistic regression baseline (scikit-learn): the no-hidden-layer MLP for classification.
 
-def ridge(alpha):
-    return Ridge(alpha=alpha)
+Ridge regression, the regression counterpart, is in linear.py.
+Correspondence with our MLP loss (cross-entropy + (lambda/2) ||W||^2, biases unpenalised):
+C = 1 / (n * lambda), where n is the number of training examples (docs/open-questions.md #10).
+"""
+
+from sklearn.linear_model import LogisticRegression
 
 
 def logistic(C, random_state=0):
-      """
-      C: parameter
-      random_state: seeds 0–4
-      """
+    """
+    C: inverse regularisation strength (tuning parameter)
+    random_state: seeds 0-4
+    """
     return LogisticRegression(
         C=C,
         max_iter=1000,
