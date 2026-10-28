@@ -5,13 +5,14 @@ Protocol (approval):
 - results reported as mean +/- s.d. over 5 random seeds (training seeds 0-4, docs/open-questions.md #6)
 
 Only the MLP receives the validation set (for early stopping); baselines are fit on the training
-split alone (pass ``use_validation=True`` for the MLP). The tuning loop of docs/open-questions.md #9
-is not implemented yet: the caller passes the chosen model and records its hyperparameters.
+split alone (pass ``use_validation=True`` for the MLP). ``tune`` is the tuning step of
+docs/open-questions.md #9: every configuration is fit with seed 0 and scored on the validation set.
 """
 
 import time
 
 import numpy as np
+from sklearn.metrics import accuracy_score, roc_auc_score
 
 from .metrics import confusion_matrix
 from .results import summarise
@@ -33,6 +34,35 @@ def n_parameters(model):
     if hasattr(model, "support_"):  # SVC / SVR
         return int(model.support_.size)
     return None
+
+
+def _val_score(model, X, y, metric):
+    if metric == "accuracy":
+        return float(accuracy_score(y, model.predict(X)))
+    if metric == "rmse":
+        return float(np.sqrt(np.mean((model.predict(X) - y) ** 2)))
+    # roc_auc: probabilities if the model has them (an SVC fit without probability=True does not)
+    scores = model.predict_proba(X)[:, 1] if hasattr(model, "predict_proba") else model.decision_function(X)
+    return float(roc_auc_score(y, scores))
+
+
+def tune(make_model, configs, data, metric, use_validation=False):
+    """Fit ``make_model(config, seed=0)`` for every config and score it on the validation set.
+
+    ``metric`` is "accuracy" or "roc_auc" (higher is better), or "rmse" (lower is better); the
+    test set is never touched. Returns ``(best_config, scores)`` with one validation score per config.
+    """
+    X_train, y_train, X_val, y_val = data[:4]
+    scores = []
+    for config in configs:
+        model = make_model(config, 0)
+        if use_validation:
+            model.fit(X_train, y_train, X_val, y_val)
+        else:
+            model.fit(X_train, y_train)
+        scores.append(_val_score(model, X_val, y_val, metric))
+    pick = np.argmin if metric == "rmse" else np.argmax
+    return configs[int(pick(scores))], scores
 
 
 def run(make_model, data, metrics_fn, seeds=range(5), use_validation=False, use_proba=False,
