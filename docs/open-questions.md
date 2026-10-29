@@ -108,7 +108,9 @@ stopping is off when no validation data is passed.
   for the gradient-flow experiment; not needed for Oct 21).
 
 **Zero-hidden-layer check against scikit-learn:** `Ridge(alpha = n * lambda)`,
-`LogisticRegression(C = 1 / (n * lambda))`.
+`LogisticRegression(C = 1 / (n * lambda))` for K >= 3 classes, and
+`LogisticRegression(C = 2 / (n * lambda))` for the two-output softmax (binary): the penalty forces
+w1 = -w2, which halves the penalty on the logit difference. Verified by `tests/test_sklearn_zero_hidden.py`.
 
 ### 11. Dataset loaders
 
