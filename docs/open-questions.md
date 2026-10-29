@@ -16,7 +16,7 @@ be reported in the Introduction of the preliminary report.
 | 6 | Random seed(s) that fix the splits; which 5 seeds are used for training randomness | Split seed 4330, shared by all methods. Training randomness uses seeds 0–4 for every method, including `random_state` of RF / HGB. | 2026-10-18 |
 | 7 | Fashion-MNIST pixel preprocessing (e.g. divide by 255, standardise) | Divide by 255 and flatten to 784 features. No other preprocessing. | 2026-10-18 |
 | 8 | RBF-SVM: size of the training subsample on Fashion-MNIST (and Adult?) | Superseded by #20: the RBF-SVM baseline was dropped on 2026-10-28, so no subsample is needed. (The earlier plan was a stratified 10,000 of the 54k Fashion-MNIST training set.) | 2026-10-18 |
-| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | Selection metric on validation: accuracy (F-MNIST), ROC-AUC (Adult), RMSE (Housing). 3–6 configs per method and dataset, tuned with seed 0, then the best config rerun with seeds 0–4. Grid values: pending (written by the baselines owner, reviewed by Sai). See [Tuning](#9-tuning) below. | 2026-10-18 |
+| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | Selection metric on validation: accuracy (F-MNIST), ROC-AUC (Adult), RMSE (Housing). 3–6 configs per method and dataset, tuned with seed 0, then the best config rerun with seeds 0–4. Grid values recorded 2026-10-28 in [Tuning](#9-tuning) below. | 2026-10-18; grid values 2026-10-28 |
 | **Code** | | | |
 | 10 | Public interface of the MLP (class/function names, arguments, return values) | scikit-learn style `MLP` class; full specification in [MLP interface](#10-mlp-interface) below. | 2026-10-18 |
 | 11 | Interface of the dataset loaders (what they return) | `load_xxx(split_seed=4330)` returns six NumPy arrays; see [Dataset loaders](#11-dataset-loaders) below. | 2026-10-18 |
@@ -139,8 +139,21 @@ Superseded: the SVM baseline was dropped (#20), so there is no subsample.
 - Grid shapes: ridge `alpha` and logistic `C`, 3 values each; random forest `max_depth`, 3 values;
   HGB `learning_rate`, 3 values; MLP width and learning rate, 2 values each
   (4 configurations).
-- The baselines owner lists the concrete values; Sai reviews them before they are written into this
-  file. Pending.
+- Grid values (recorded 2026-10-28; they are the `*_GRID` constants in `scripts/reproduce_results.py`):
+
+  | Method | Hyperparameter | Values |
+  |---|---|---|
+  | ridge (Housing) | `alpha` | 0.01, 1, 100 |
+  | logistic (Adult, Fashion-MNIST) | `C` | 0.01, 0.1, 1 |
+  | random forest | `max_depth` | 5, 10, 20 |
+  | HGB | `learning_rate` | 0.03, 0.1, 0.3 |
+  | MLP | width of 2 equal hidden layers × `lr` | width 64, 128 × lr 1e-3, 1e-2 (4 configurations) |
+
+  Fixed for the MLP: ReLU, He initialisation, Adam, batch size 128, at most 50 epochs, patience 5,
+  no weight decay or dropout; float32 on Fashion-MNIST, float64 otherwise. Other settings of the
+  baselines are the scikit-learn defaults (logistic `max_iter=1000`).
+- Result of the first run: random forest picked the largest `max_depth` (20) on all three datasets,
+  so its best value may lie outside this grid; the report should state the grid ranges.
 
 ### 12. Results files and parameter counts
 
