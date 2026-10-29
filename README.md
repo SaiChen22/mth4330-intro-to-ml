@@ -47,8 +47,8 @@ The loaders in `src/bench/data/` read them from `data/` and do all preprocessing
 ## Baselines
 
 All from scikit-learn: softmax/logistic regression (classification) and ridge regression (regression),
-i.e. the no-hidden-layer MLP; random forest; histogram gradient boosting; RBF-kernel SVM/SVR
-(subsampled training set on Fashion-MNIST if needed).
+i.e. the no-hidden-layer MLP; random forest; histogram gradient boosting. The RBF-kernel SVM/SVR
+of the approval was dropped (`docs/open-questions.md` #20).
 
 PyTorch and scikit-learn's `MLPClassifier`/`MLPRegressor` are used **only** as correctness references,
 kept in a separate directory (`src/reference/`).

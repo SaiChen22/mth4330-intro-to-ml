@@ -15,8 +15,8 @@ be reported in the Introduction of the preliminary report.
 | 5 | California Housing: how to stratify a continuous target for the 70/15/15 split? Scale the target? | Stratify on 10 quantile bins of the target. Target is not scaled for any method (units of $100k). See [California Housing](#5-california-housing) below. | 2026-10-18 |
 | 6 | Random seed(s) that fix the splits; which 5 seeds are used for training randomness | Split seed 4330, shared by all methods. Training randomness uses seeds 0–4 for every method, including `random_state` of RF / HGB. | 2026-10-18 |
 | 7 | Fashion-MNIST pixel preprocessing (e.g. divide by 255, standardise) | Divide by 255 and flatten to 784 features. No other preprocessing. | 2026-10-18 |
-| 8 | RBF-SVM: size of the training subsample on Fashion-MNIST (and Adult?) | Fashion-MNIST: stratified 10,000 of the 54k training set (sampling seed 4330). Adult, Housing: full training set first; see [SVM subsample](#8-svm-subsample) below. | 2026-10-18 |
-| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | Selection metric on validation: accuracy (F-MNIST), ROC-AUC (Adult), RMSE (Housing). 3–6 configs per method and dataset, tuned with seed 0, then the best config rerun with seeds 0–4. Grid values: pending (written by the baselines owner, reviewed by Sai). See [Tuning](#9-tuning) below. | 2026-10-18 |
+| 8 | RBF-SVM: size of the training subsample on Fashion-MNIST (and Adult?) | Superseded by #20: the RBF-SVM baseline was dropped on 2026-10-28, so no subsample is needed. (The earlier plan was a stratified 10,000 of the 54k Fashion-MNIST training set.) | 2026-10-18 |
+| 9 | Hyperparameter search space and budget for each method; validation metric used for selection | Selection metric on validation: accuracy (F-MNIST), ROC-AUC (Adult), RMSE (Housing). 3–6 configs per method and dataset, tuned with seed 0, then the best config rerun with seeds 0–4. Grid values recorded 2026-10-28 in [Tuning](#9-tuning) below. | 2026-10-18; grid values 2026-10-28 |
 | **Code** | | | |
 | 10 | Public interface of the MLP (class/function names, arguments, return values) | scikit-learn style `MLP` class; full specification in [MLP interface](#10-mlp-interface) below. | 2026-10-18 |
 | 11 | Interface of the dataset loaders (what they return) | `load_xxx(split_seed=4330)` returns six NumPy arrays; see [Dataset loaders](#11-dataset-loaders) below. | 2026-10-18 |
@@ -29,6 +29,8 @@ be reported in the Introduction of the preliminary report.
 | 17 | License for the code | | |
 | 18 | Report: one `main.tex` or one file per section? Overleaf or the repo as the source of truth? | | |
 | 19 | Shared notation for the report (symbols, vector/matrix conventions) | | |
+| **Changes to the approved plan** | | | |
+| 20 | Drop the RBF-kernel SVM/SVR baseline (approval §4 lists it)? | Dropped. Remaining baselines: softmax/logistic and ridge, random forest, histogram gradient boosting. The report Introduction must list this as a change from the approved plan (Sai to state the reason); the guidelines only require "one or more" baselines, each run on all three datasets. See [Dropped baseline](#20-dropped-baseline) below. | 2026-10-28 |
 
 ## Details of the decisions
 
@@ -106,7 +108,9 @@ stopping is off when no validation data is passed.
   for the gradient-flow experiment; not needed for Oct 21).
 
 **Zero-hidden-layer check against scikit-learn:** `Ridge(alpha = n * lambda)`,
-`LogisticRegression(C = 1 / (n * lambda))`.
+`LogisticRegression(C = 1 / (n * lambda))` for K >= 3 classes, and
+`LogisticRegression(C = 2 / (n * lambda))` for the two-output softmax (binary): the penalty forces
+w1 = -w2, which halves the penalty on the logit difference. Verified by `tests/test_sklearn_zero_hidden.py`.
 
 ### 11. Dataset loaders
 
@@ -123,12 +127,7 @@ stopping is off when no validation data is passed.
 
 ### 8. SVM subsample
 
-- Fashion-MNIST: a stratified 10,000 of the 54k training images, sampling seed 4330, the same subset
-  for every training seed.
-- Adult and Housing: the full training set first. If one Adult fit takes more than about 5 minutes,
-  use the same kind of stratified 10k subset and state in the report that this goes beyond the
-  approval.
-- The report must say that the SVM used a subsample.
+Superseded: the SVM baseline was dropped (#20), so there is no subsample.
 
 ### 9. Tuning
 
@@ -140,13 +139,23 @@ stopping is off when no validation data is passed.
   (2) pick the best one; (3) rerun that configuration with seeds 0–4 and report the test-set
   mean ± s.d.
 - Grid shapes: ridge `alpha` and logistic `C`, 3 values each; random forest `max_depth`, 3 values;
-  HGB `learning_rate`, 3 values; SVM `C`, 2 values; MLP width and learning rate, 2 values each
+  HGB `learning_rate`, 3 values; MLP width and learning rate, 2 values each
   (4 configurations).
-- The baselines owner lists the concrete values; Sai reviews them before they are written into this
-  file. Pending.
-- SVM probabilities: not enabled during tuning; the final fit uses `probability=True` and
-  `random_state=seed`. The report must say that for a probability-enabled SVC the s.d. is not
-  strictly 0 and that `predict` and the argmax of the probabilities occasionally disagree.
+- Grid values (recorded 2026-10-28; they are the `*_GRID` constants in `scripts/reproduce_results.py`):
+
+  | Method | Hyperparameter | Values |
+  |---|---|---|
+  | ridge (Housing) | `alpha` | 0.01, 1, 100 |
+  | logistic (Adult, Fashion-MNIST) | `C` | 0.01, 0.1, 1 |
+  | random forest | `max_depth` | 5, 10, 20 |
+  | HGB | `learning_rate` | 0.03, 0.1, 0.3 |
+  | MLP | width of 2 equal hidden layers × `lr` | width 64, 128 × lr 1e-3, 1e-2 (4 configurations) |
+
+  Fixed for the MLP: ReLU, He initialisation, Adam, batch size 128, at most 50 epochs, patience 5,
+  no weight decay or dropout; float32 on Fashion-MNIST, float64 otherwise. Other settings of the
+  baselines are the scikit-learn defaults (logistic `max_iter=1000`).
+- Result of the first run: random forest picked the largest `max_depth` (20) on all three datasets,
+  so its best value may lie outside this grid; the report should state the grid ranges.
 
 ### 12. Results files and parameter counts
 
@@ -156,8 +165,8 @@ stopping is off when no validation data is passed.
 - A small summary script reads all the JSON files and prints the tables. Separate files mean parallel
   experiments never write to the same file.
 - Parameter count: linear models and the MLP, the actual number of weights and biases; random
-  forest, the total number of tree nodes; SVM, the number of support vectors; HGB, `n/a`. A table
-  footnote must say that for trees and kernel methods the count only proxies model size and cannot
+  forest, the total number of tree nodes; HGB, `n/a`. A table
+  footnote must say that for trees the count only proxies model size and cannot
   be compared directly with neural networks.
 
 ### 16. Branches
@@ -188,3 +197,11 @@ stopping is off when no validation data is passed.
 - **Seeds summary:** the s.d. over the 5 seeds is the sample s.d. (ddof = 1).
 - **Data download:** `scripts/download_data.py` downloads the raw files into `data/`; the loaders
   only read them and raise an error that points to the script if a file is missing.
+
+### 20. Dropped baseline
+
+- The RBF-kernel SVM/SVR baseline of approval §4 is dropped (decision 2026-10-28). Code
+  (`src/baselines/SVM.py`), its three result files and the Fashion-MNIST subsample are removed.
+- Remaining baselines, each run on all three datasets: softmax/logistic regression (classification)
+  and ridge regression (regression), random forest, histogram gradient boosting.
+- Report: list this under "changes from the approved plan" in the Introduction and give the reason.
